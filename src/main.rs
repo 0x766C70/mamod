@@ -19,6 +19,11 @@ struct Member {
     user_id: String,
 }
 
+#[derive(Deserialize)]
+struct RoomMembersResponse {
+    members: Vec<String>,
+}
+
 fn main() {
     // Get username from command line arguments
     let args: Vec<String> = env::args().collect();
@@ -122,13 +127,24 @@ fn get_room_members(room_id: &str, debug: bool) -> Vec<Member> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    serde_json::from_str(&stdout).unwrap_or_else(|e| {
-        eprintln!(
-            "Failed to parse JSON from synadm room members for {}: {}",
-            room_id, e
-        );
-        Vec::new()
-    })
+    
+    // Parse the response as RoomMembersResponse and convert to Vec<Member>
+    let response: RoomMembersResponse = match serde_json::from_str(&stdout) {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!(
+                "Failed to parse JSON from synadm room members for {}: {}",
+                room_id, e
+            );
+            return Vec::new();
+        }
+    };
+    
+    // Convert Vec<String> to Vec<Member>
+    response.members
+        .into_iter()
+        .map(|user_id| Member { user_id })
+        .collect()
 }
 
 #[cfg(test)]
@@ -196,5 +212,58 @@ mod tests {
 
         assert_eq!(response.joined_rooms.len(), 0);
         assert_eq!(response.total, 0);
+    }
+
+    #[test]
+    fn test_room_members_response_deserialization() {
+        let json = r#"{
+            "members": [
+                "@user1:example.com",
+                "@user2:example.com",
+                "@user3:example.com"
+            ]
+        }"#;
+
+        let response: RoomMembersResponse = serde_json::from_str(json)
+            .expect("Failed to deserialize RoomMembersResponse");
+
+        assert_eq!(response.members.len(), 3);
+        assert_eq!(response.members[0], "@user1:example.com");
+        assert_eq!(response.members[1], "@user2:example.com");
+        assert_eq!(response.members[2], "@user3:example.com");
+    }
+
+    #[test]
+    fn test_empty_room_members_response() {
+        let json = r#"{
+            "members": []
+        }"#;
+
+        let response: RoomMembersResponse = serde_json::from_str(json)
+            .expect("Failed to deserialize RoomMembersResponse");
+
+        assert_eq!(response.members.len(), 0);
+    }
+
+    #[test]
+    fn test_room_members_to_member_conversion() {
+        let json = r#"{
+            "members": [
+                "@alice:example.com",
+                "@bob:example.com"
+            ]
+        }"#;
+
+        let response: RoomMembersResponse = serde_json::from_str(json)
+            .expect("Failed to deserialize RoomMembersResponse");
+
+        let members: Vec<Member> = response.members
+            .into_iter()
+            .map(|user_id| Member { user_id })
+            .collect();
+
+        assert_eq!(members.len(), 2);
+        assert_eq!(members[0].user_id, "@alice:example.com");
+        assert_eq!(members[1].user_id, "@bob:example.com");
     }
 }
