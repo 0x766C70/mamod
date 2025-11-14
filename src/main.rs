@@ -60,7 +60,7 @@ fn main() {
 }
 
 fn get_user_rooms(username: &str, debug: bool) -> Vec<Room> {
-    let args = ["user", "rooms", username];
+    let args = ["user", "membership", username];
     
     if debug {
         eprintln!("DEBUG: synadm {}", args.join(" "));
@@ -80,6 +80,7 @@ fn get_user_rooms(username: &str, debug: bool) -> Vec<Room> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
+    println!("DEBUG: synadm output: {}", stdout);
     serde_json::from_str(&stdout).expect("Failed to parse JSON from synadm user rooms")
 }
 
