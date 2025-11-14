@@ -31,7 +31,7 @@ fn main() {
 
     // Collect all contacts from all rooms
     let mut all_contacts: HashSet<String> = HashSet::new();
-    
+
     for room in rooms {
         let members = get_room_members(&room.room_id);
         for member in members {
@@ -58,14 +58,15 @@ fn get_user_rooms(username: &str) -> Vec<Room> {
         .expect("Failed to execute synadm user rooms command");
 
     if !output.status.success() {
-        eprintln!("Error executing synadm user rooms: {}", 
-                  String::from_utf8_lossy(&output.stderr));
+        eprintln!(
+            "Error executing synadm user rooms: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
         exit(1);
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    serde_json::from_str(&stdout)
-        .expect("Failed to parse JSON from synadm user rooms")
+    serde_json::from_str(&stdout).expect("Failed to parse JSON from synadm user rooms")
 }
 
 fn get_room_members(room_id: &str) -> Vec<Member> {
@@ -75,16 +76,20 @@ fn get_room_members(room_id: &str) -> Vec<Member> {
         .expect("Failed to execute synadm room members command");
 
     if !output.status.success() {
-        eprintln!("Error executing synadm room members for {}: {}", 
-                  room_id, String::from_utf8_lossy(&output.stderr));
+        eprintln!(
+            "Error executing synadm room members for {}: {}",
+            room_id,
+            String::from_utf8_lossy(&output.stderr)
+        );
         return Vec::new();
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    serde_json::from_str(&stdout)
-        .unwrap_or_else(|e| {
-            eprintln!("Failed to parse JSON from synadm room members for {}: {}", 
-                      room_id, e);
-            Vec::new()
-        })
+    serde_json::from_str(&stdout).unwrap_or_else(|e| {
+        eprintln!(
+            "Failed to parse JSON from synadm room members for {}: {}",
+            room_id, e
+        );
+        Vec::new()
+    })
 }
