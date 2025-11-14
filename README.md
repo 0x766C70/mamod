@@ -22,8 +22,12 @@ The binary will be available at `target/release/mamod`.
 ## Usage
 
 ```bash
-mamod <matrix_username>
+mamod [--debug] <matrix_username>
 ```
+
+### Options
+
+- `--debug`: Enable debug mode to print each synadm command before execution
 
 ### Example
 
@@ -40,6 +44,25 @@ This will:
 ### Output
 
 ```
+Contacts for user @alice:example.com:
+@bob:example.com
+@charlie:example.com
+@dave:example.com
+```
+
+### Debug Mode
+
+When using the `--debug` flag, the tool will print each synadm command to stderr before executing it:
+
+```bash
+mamod --debug @alice:example.com
+```
+
+Output:
+```
+DEBUG: synadm user rooms @alice:example.com
+DEBUG: synadm room members !room1:example.com
+DEBUG: synadm room members !room2:example.com
 Contacts for user @alice:example.com:
 @bob:example.com
 @charlie:example.com
