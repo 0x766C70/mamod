@@ -9,6 +9,12 @@ struct Room {
 }
 
 #[derive(Deserialize)]
+struct UserMembershipResponse {
+    joined_rooms: Vec<String>,
+    total: usize,
+}
+
+#[derive(Deserialize)]
 struct Member {
     user_id: String,
 }
@@ -80,8 +86,18 @@ fn get_user_rooms(username: &str, debug: bool) -> Vec<Room> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    println!("DEBUG: synadm output: {}", stdout);
-    serde_json::from_str(&stdout).expect("Failed to parse JSON from synadm user rooms")
+    if debug {
+        eprintln!("DEBUG: synadm output: {}", stdout);
+    }
+    
+    let response: UserMembershipResponse = serde_json::from_str(&stdout)
+        .expect("Failed to parse JSON from synadm user rooms");
+    
+    // Convert room IDs from strings to Room structs
+    response.joined_rooms
+        .into_iter()
+        .map(|room_id| Room { room_id })
+        .collect()
 }
 
 fn get_room_members(room_id: &str, debug: bool) -> Vec<Member> {
@@ -113,4 +129,72 @@ fn get_room_members(room_id: &str, debug: bool) -> Vec<Member> {
         );
         Vec::new()
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_user_membership_response_deserialization() {
+        let json = r#"{
+            "joined_rooms": [
+                "!DEOhdyEateKRHcRuJX:matrix.fdn.fr",
+                "!xqCsWJjzgamGppeBiy:matrix.fdn.fr",
+                "!YmaFJxbsfKeXAjKiVl:matrix.fdn.fr",
+                "!uNTFtzaiShUjyOsILl:matrix.fdn.fr",
+                "!amKyxBfzQfKtaCLRrL:matrix.fdn.fr",
+                "!DNBNEtOjLJqAGdAlqx:matrix.fdn.fr",
+                "!SGMazuMtZjkjOedPTQ:matrix.fdn.fr"
+            ],
+            "total": 7
+        }"#;
+
+        let response: UserMembershipResponse = serde_json::from_str(json)
+            .expect("Failed to deserialize UserMembershipResponse");
+
+        assert_eq!(response.joined_rooms.len(), 7);
+        assert_eq!(response.total, 7);
+        assert_eq!(
+            response.joined_rooms[0],
+            "!DEOhdyEateKRHcRuJX:matrix.fdn.fr"
+        );
+    }
+
+    #[test]
+    fn test_room_id_conversion() {
+        let json = r#"{
+            "joined_rooms": [
+                "!room1:example.com",
+                "!room2:example.com"
+            ],
+            "total": 2
+        }"#;
+
+        let response: UserMembershipResponse = serde_json::from_str(json)
+            .expect("Failed to deserialize UserMembershipResponse");
+
+        let rooms: Vec<Room> = response.joined_rooms
+            .into_iter()
+            .map(|room_id| Room { room_id })
+            .collect();
+
+        assert_eq!(rooms.len(), 2);
+        assert_eq!(rooms[0].room_id, "!room1:example.com");
+        assert_eq!(rooms[1].room_id, "!room2:example.com");
+    }
+
+    #[test]
+    fn test_empty_membership_response() {
+        let json = r#"{
+            "joined_rooms": [],
+            "total": 0
+        }"#;
+
+        let response: UserMembershipResponse = serde_json::from_str(json)
+            .expect("Failed to deserialize UserMembershipResponse");
+
+        assert_eq!(response.joined_rooms.len(), 0);
+        assert_eq!(response.total, 0);
+    }
 }
