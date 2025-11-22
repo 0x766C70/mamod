@@ -101,7 +101,8 @@ fn get_user_rooms(username: &str, debug: bool) -> Vec<Room> {
 }
 
 fn get_room_members(room_id: &str, debug: bool) -> Vec<Member> {
-    let args = ["room", "members", room_id];
+    let quoted_room_id = format!("'{}'", room_id);
+    let args = ["room", "members", &quoted_room_id];
     
     if debug {
         eprintln!("DEBUG: synadm {}", args.join(" "));
