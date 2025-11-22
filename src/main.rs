@@ -101,7 +101,10 @@ fn get_user_rooms(username: &str, debug: bool) -> Vec<Room> {
 }
 
 fn get_room_members(room_id: &str, debug: bool) -> Vec<Member> {
-    let args = ["room", "members", room_id];
+    // Escape single quotes in room_id by replacing ' with '\''
+    let escaped_room_id = room_id.replace("'", "'\\''");
+    let quoted_room_id = format!("'{}'", escaped_room_id);
+    let args = ["room", "members", &quoted_room_id];
     
     if debug {
         eprintln!("DEBUG: synadm {}", args.join(" "));
